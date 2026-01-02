@@ -1,7 +1,7 @@
-import ProjectInfo.*
 import just.semver.SemVer
 import kevinlee.sbt.SbtCommon.crossVersionProps
 import sbtcrossproject.CrossProject
+import extras.scala.io.syntax.color.*
 
 ThisBuild / scalaVersion := props.ProjectScalaVersion
 ThisBuild / organization := "io.kevinlee"
@@ -25,558 +25,13 @@ ThisBuild / scmInfo :=
 
 ThisBuild / licenses := props.licenses
 
-//ThisBuild / semanticdbEnabled := true
-//ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-
-ThisBuild / scalafixConfig := (
-  if (scalaVersion.value.startsWith("3"))
-    ((ThisBuild / baseDirectory).value / ".scalafix-scala3.conf").some
-  else
-    ((ThisBuild / baseDirectory).value / ".scalafix-scala2.conf").some
-)
-
-//ThisBuild / scalafixScalaBinaryVersion                   := {
-//  val log        = sLog.value
-//  val newVersion = if (scalaVersion.value.startsWith("3")) {
-//    (ThisBuild / scalafixScalaBinaryVersion).value
-//  } else {
-//    CrossVersion.binaryScalaVersion(scalaVersion.value)
-//  }
-//
-//  log.info(
-//    s">> Change ThisBuild / scalafixScalaBinaryVersion from ${(ThisBuild / scalafixScalaBinaryVersion).value} to $newVersion"
-//  )
-//  newVersion
-//}
-
-//ThisBuild / scalafixDependencies += "com.github.xuwei-k" %% "scalafix-rules" % "0.2.12"
-
-lazy val loggerF = (project in file("."))
-  .enablePlugins(DevOopsGitHubReleasePlugin)
+lazy val loggerFDocs = (project in file("."))
   .settings(
     name := prefixedProjectName(""),
     description := "Logger for F[_]",
-    libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-      scalaVersion.value,
-      libraryDependencies.value,
-    )
-    /* GitHub Release { */,
-    devOopsPackagedArtifacts := List(s"*/*/*/target/scala-*/${devOopsArtifactNamePrefix.value}*.jar"),
-    /* } GitHub Release */
   )
   .settings(noPublish)
-  .aggregate(
-    coreJvm,
-    coreJs,
-    coreNative,
-    slf4jLoggerJvm,
-    slf4jLoggerNative,
-    log4sLoggerJvm,
-    log4sLoggerJs,
-    log4jLoggerJvm,
-    log4jLoggerNative,
-    sbtLoggingJvm,
-    sbtLoggingNative,
-    catsJvm,
-    catsJs,
-    catsNative,
-    slf4jMdcJvm,
-    slf4jMdcNative,
-    logbackMdcMonix3Jvm,
-    testLogbackMdcMonix3Jvm,
-    doobie1Jvm,
-    testKitJvm,
-    testKitJs,
-    testKitNative,
-    catsEffectJvm,
-//    catsEffectJs,
-    catsEffect3Jvm,
-//    catsEffect3Js,
-    monixJvm,
-//    monixJs,
-  )
 
-lazy val core       =
-  module(ProjectName("core"), crossProject(JVMPlatform, JSPlatform, NativePlatform))
-    .settings(
-      description := "Logger for F[_] - Core",
-      libraryDependencies ++= List(
-        libs.effectieCore.value,
-        libs.orphanCats.value,
-        libs.cats.value % Test,
-        libs.tests.extrasConcurrent.value,
-        libs.tests.extrasConcurrentTesting,
-        libs.cats.value % Optional,
-      ) ++ libs.tests.hedgehogLibs.value,
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-lazy val coreJvm    = core.jvm
-lazy val coreJs     = core
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-lazy val coreNative = core.native.settings(nativeSettings)
-
-lazy val slf4jLogger       = module(ProjectName("slf4j"), crossProject(JVMPlatform, NativePlatform))
-  .settings(
-    description := "Logger for F[_] - Logger with Slf4j",
-    libraryDependencies ++= Seq(
-      libs.slf4jApi
-    ),
-    libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-      scalaVersion.value,
-      libraryDependencies.value,
-    ),
-  )
-  .dependsOn(core)
-lazy val slf4jLoggerJvm    = slf4jLogger.jvm
-lazy val slf4jLoggerNative = slf4jLogger.native.settings(nativeSettings)
-
-lazy val log4sLogger    =
-  module(ProjectName("log4s"), crossProject(JVMPlatform, JSPlatform))
-    .settings(
-      description := "Logger for F[_] - Logger with Log4s",
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-      libraryDependencies ++= List(
-        libs.log4sLib.value
-      ),
-    )
-    .dependsOn(core)
-lazy val log4sLoggerJvm = log4sLogger.jvm
-lazy val log4sLoggerJs  = log4sLogger
-  .js
-  .settings(
-    jsSettings
-  )
-
-lazy val log4jLogger       =
-  module(ProjectName("log4j"), crossProject(JVMPlatform, NativePlatform))
-    .settings(
-      description := "Logger for F[_] - Logger with Log4j",
-      Compile / unmanagedSourceDirectories ++= {
-        val sharedSourceDir = (baseDirectory.value / ".." / "shared").getCanonicalFile / "src" / "main"
-        if (scalaVersion.value.startsWith("3."))
-          Seq(
-            sharedSourceDir / "scala-2.12_3.0",
-            sharedSourceDir / "scala-2.13_3.0",
-          )
-        else if (scalaVersion.value.startsWith("2.13"))
-          Seq(
-            sharedSourceDir / "scala-2.12_2.13",
-            sharedSourceDir / "scala-2.12_3.0",
-            sharedSourceDir / "scala-2.13_3.0",
-          )
-        else if (scalaVersion.value.startsWith("2.12"))
-          Seq(
-            sharedSourceDir / "scala-2.12_2.13",
-            sharedSourceDir / "scala-2.12_3.0",
-            sharedSourceDir / "scala-2.12",
-          )
-        else
-          Seq.empty
-      },
-      Test / unmanagedSourceDirectories ++= {
-        val sharedSourceDir = (baseDirectory.value / ".." / "shared").getCanonicalFile / "src" / "test"
-        if (scalaVersion.value.startsWith("3."))
-          Seq(
-            sharedSourceDir / "scala-2.12_3.0",
-            sharedSourceDir / "scala-2.13_3.0",
-          )
-        else if (scalaVersion.value.startsWith("2.13"))
-          Seq(
-            sharedSourceDir / "scala-2.12_2.13",
-            sharedSourceDir / "scala-2.13_3.0",
-          )
-        else if (scalaVersion.value.startsWith("2.12"))
-          Seq(
-            sharedSourceDir / "scala-2.12_2.13",
-            sharedSourceDir / "scala-2.12_3.0",
-            sharedSourceDir / "scala-2.12",
-          )
-        else
-          Seq.empty
-      },
-      libraryDependencies ++= Seq(
-        libs.log4jApi,
-        libs.log4jCore,
-      ).map(_ % Provided),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .dependsOn(core)
-lazy val log4jLoggerJvm    = log4jLogger.jvm
-lazy val log4jLoggerNative = log4jLogger.native.settings(nativeSettings)
-
-lazy val sbtLogging       =
-  module(ProjectName("sbt-logging"), crossProject(JVMPlatform, NativePlatform))
-    .settings(
-      description := "Logger for F[_] - Logger with sbt logging",
-      libraryDependencies ++= crossVersionProps(
-        List.empty,
-        SemVer.parseUnsafe(scalaVersion.value),
-      ) {
-        case (SemVer.Major(2), SemVer.Minor(11), _) =>
-          List(
-            libs.sbtLoggingLib("1.2.4")
-          )
-
-        case (SemVer.Major(2), SemVer.Minor(12), _) =>
-          List(
-            libs.sbtLoggingLib("1.5.8")
-          )
-
-        case (SemVer.Major(2), SemVer.Minor(13), _) | (SemVer.Major(3), SemVer.Minor(_), _) =>
-          List(
-            libs.sbtLoggingLib("1.5.8")
-          ).map(_.cross(CrossVersion.for3Use2_13))
-      },
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .dependsOn(core)
-lazy val sbtLoggingJvm    = sbtLogging.jvm
-lazy val sbtLoggingNative = sbtLogging.native.settings(nativeSettings)
-
-lazy val cats       =
-  module(ProjectName("cats"), crossProject(JVMPlatform, JSPlatform, NativePlatform))
-    .settings(
-      description := "Logger for F[_] - Cats",
-      libraryDependencies ++= libs.tests.hedgehogLibs.value ++ List(
-        libs.effectieCore.value,
-        libs.cats.value,
-        libs.effectieSyntax.value,
-        libs.effectieCats.value % Test,
-      ),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .dependsOn(core % props.IncludeTest)
-lazy val catsJvm    = cats.jvm
-lazy val catsJs     = cats
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-lazy val catsNative = cats.native.settings(nativeSettings)
-
-lazy val slf4jMdc       = module(ProjectName("slf4j-mdc"), crossProject(JVMPlatform, NativePlatform))
-  .settings(
-    description := "Logger for F[_] - A tool to set MDC's MDCAdapter",
-    libraryDependencies ++= Seq(
-      libs.slf4jApi,
-      libs.cats.value % Test,
-    ) ++ libs.tests.hedgehogLibs.value,
-    libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-      scalaVersion.value,
-      libraryDependencies.value,
-    ),
-  )
-  .dependsOn(
-    core
-  )
-lazy val slf4jMdcJvm    = slf4jMdc.jvm
-lazy val slf4jMdcNative = slf4jMdc.native.settings(nativeSettings)
-
-lazy val logbackMdcMonix3    =
-  module(ProjectName("logback-mdc-monix3"), crossProject(JVMPlatform))
-    .settings(
-      description := "Logger for F[_] - logback MDC context map support for Monix 3",
-      libraryDependencies ++= Seq(
-        libs.logbackClassic,
-        libs.logbackScalaInterop,
-        libs.monix3Execution.value,
-        libs.slf4jApi % Test,
-        libs.tests.monix.value,
-        libs.tests.effectieMonix3.value,
-      ) ++ libs.tests.hedgehogLibs.value,
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .dependsOn(
-      core,
-      slf4jMdc,
-      monix       % Test,
-      slf4jLogger % Test,
-    )
-lazy val logbackMdcMonix3Jvm = logbackMdcMonix3.jvm
-
-lazy val testLogbackMdcMonix3    = testProject(ProjectName("logback-mdc-monix3"), crossProject(JVMPlatform))
-  .settings(
-    description := "Logger for F[_] - testing logback MDC context map support for Monix 3",
-    libraryDependencies ++= Seq(
-      libs.slf4jApiLatest            % Test,
-      libs.logbackClassicLatest      % Test,
-      libs.logbackScalaInteropLatest % Test,
-      libs.monix3Execution.value     % Test,
-      libs.tests.monix.value,
-      libs.tests.effectieMonix3.value,
-    ) ++ libs.tests.hedgehogLibs.value,
-    libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-      scalaVersion.value,
-      libraryDependencies.value,
-    ),
-  )
-  .dependsOn(
-    core             % Test,
-    slf4jMdc         % Test,
-    logbackMdcMonix3 % "test->test",
-    monix            % Test,
-    slf4jLogger      % Test,
-  )
-lazy val testLogbackMdcMonix3Jvm = testLogbackMdcMonix3.jvm
-
-lazy val doobie1    = module(ProjectName("doobie1"), crossProject(JVMPlatform))
-  .settings(
-    description := "Logger for F[_] - for Doobie v1",
-    libraryDependencies ++= Seq(
-      libs.doobieFree,
-      libs.tests.effectieCatsEffect3.value,
-      libs.tests.extrasHedgehogCatsEffect3.value,
-    ) ++ libs.tests.hedgehogLibs.value,
-    libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-      scalaVersion.value,
-      libraryDependencies.value,
-    ),
-  )
-  .dependsOn(
-    core,
-    cats,
-    testKit     % Test,
-    slf4jLogger % Test,
-  )
-lazy val doobie1Jvm = doobie1.jvm
-
-lazy val testKit       =
-  module(ProjectName("test-kit"), crossProject(JVMPlatform, JSPlatform, NativePlatform))
-    .settings(
-      description := "Logger for F[_] - Test Kit",
-      libraryDependencies ++= libs.tests.hedgehogLibs.value ++
-//        libs.tests.hedgehogExtra.value ++
-        List(
-          libs.cats.value
-        ),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .dependsOn(core % props.IncludeTest)
-lazy val testKitJvm    = testKit.jvm
-lazy val testKitJs     = testKit
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-lazy val testKitNative = testKit.native.settings(nativeSettings)
-
-lazy val catsEffect    =
-  module(ProjectName("cats-effect"), crossProject(JVMPlatform, JSPlatform))
-    .settings(
-      description := "Logger for F[_] - Cats Effect",
-      libraryDependencies ++= libs.tests.hedgehogLibs.value ++ List(libs.effectieCatsEffect2.value % Test),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, cats)
-lazy val catsEffectJvm = catsEffect.jvm
-lazy val catsEffectJs  = catsEffect
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-
-lazy val catsEffect3       =
-  module(ProjectName("cats-effect3"), crossProject(JVMPlatform, JSPlatform))
-    .settings(
-      description := "Logger for F[_] - Cats Effect 3",
-      libraryDependencies ++= libs.tests.hedgehogLibs.value ++ List(
-        libs.effectieCatsEffect3.value % Test,
-        libs.tests.extrasHedgehogCatsEffect3.value,
-      ),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, cats)
-lazy val catsEffect3Jvm    = catsEffect3.jvm
-lazy val catsEffect3Js     = catsEffect3
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-
-lazy val monix    =
-  module(ProjectName("monix"), crossProject(JVMPlatform, JSPlatform))
-    .settings(
-      description := "Logger for F[_] - Monix",
-      libraryDependencies ++= libs.tests.hedgehogLibs.value ++ List(libs.effectieMonix.value % Test),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, cats)
-lazy val monixJvm = monix.jvm
-lazy val monixJs  = monix
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-
-lazy val testCore    =
-  testProject(
-    ProjectName("core"),
-    crossProject(JVMPlatform, JSPlatform),
-  )
-    .settings(
-      description := "Test Logger for F[_] - Core module",
-      libraryDependencies ++= Seq(
-        libs.slf4jApi,
-        libs.logbackClassic,
-        libs.tests.extrasTestingTools.value,
-      ) ++ libs.tests.hedgehogLibs.value,
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core, log4sLogger)
-lazy val testCoreJvm = testCore.jvm
-lazy val testCoreJs  = testCore
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-
-lazy val testCoreWithCats    =
-  testProject(
-    ProjectName("core-with-cats"),
-    crossProject(JVMPlatform, JSPlatform),
-  )
-    .settings(
-      description := "Test Logger for F[_] - Core module",
-      libraryDependencies ++= Seq(
-        libs.slf4jApi,
-        libs.logbackClassic,
-        libs.cats.value,
-      ) ++ libs.tests.hedgehogLibs.value,
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core, testCore % props.IncludeTest)
-lazy val testCoreWithCatsJvm = testCoreWithCats.jvm
-lazy val testCoreWithCatsJs  = testCoreWithCats
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-
-lazy val testCatsEffectWithSlf4jLogger    =
-  testProject(
-    ProjectName("cats-effect-slf4j"),
-    crossProject(JVMPlatform),
-  )
-    .settings(
-      description := "Test Logger for F[_] - Logger with Slf4j",
-      libraryDependencies ++= Seq(libs.slf4jApi, libs.logbackClassic, libs.tests.extrasCats.value),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, slf4jLogger, catsEffect % props.IncludeTest)
-lazy val testCatsEffectWithSlf4jLoggerJvm = testCatsEffectWithSlf4jLogger.jvm
-
-lazy val testMonixWithSlf4jLogger    =
-  testProject(
-    ProjectName("monix-slf4j"),
-    crossProject(JVMPlatform),
-  )
-    .settings(
-      description := "Test Logger for F[_] - Logger with Slf4j",
-      libraryDependencies ++= Seq(libs.slf4jApi, libs.logbackClassic, libs.tests.extrasCats.value),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, slf4jLogger, monix % props.IncludeTest)
-lazy val testMonixWithSlf4jLoggerJvm = testMonixWithSlf4jLogger.jvm
-
-lazy val testCatsEffectWithLog4sLogger    =
-  testProject(
-    ProjectName("cats-effect-log4s"),
-    crossProject(JVMPlatform, JSPlatform),
-  )
-    .settings(
-      description := "Test Logger for F[_] - Logger with Log4s",
-      libraryDependencies ++= Seq(libs.log4sLib.value, libs.logbackClassic, libs.tests.extrasCats.value),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, log4sLogger, catsEffect3 % props.IncludeTest)
-lazy val testCatsEffectWithLog4sLoggerJvm = testCatsEffectWithLog4sLogger.jvm
-lazy val testCatsEffectWithLog4sLoggerJs  = testCatsEffectWithLog4sLogger
-  .js
-  .settings(
-    jsSettings,
-    jsSettingsForFuture,
-  )
-
-lazy val testCatsEffectWithLog4jLogger    =
-  testProject(
-    ProjectName("cats-effect-log4j"),
-    crossProject(JVMPlatform),
-  )
-    .settings(
-      description := "Test Logger for F[_] - Logger with Log4j",
-      libraryDependencies ++= Seq(libs.log4jApi, libs.log4jCore, libs.tests.extrasCats.value),
-      libraryDependencies := libraryDependenciesRemoveScala3Incompatible(
-        scalaVersion.value,
-        libraryDependencies.value,
-      ),
-    )
-    .settings(noPublish)
-    .dependsOn(core % props.IncludeTest, log4jLogger, catsEffect % props.IncludeTest)
-lazy val testCatsEffectWithLog4jLoggerJvm = testCatsEffectWithLog4jLogger.jvm
 
 lazy val docs = (project in file("docs-gen-tmp/docs"))
   .enablePlugins(MdocPlugin, DocusaurPlugin)
@@ -587,7 +42,8 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
     cleanFiles += ((ThisBuild / baseDirectory).value / "generated-docs" / "docs"),
     scalacOptions ~= (_.filter(opt => opt != "-Xfatal-warnings")),
     libraryDependencies ++= {
-      val latestTag = getTheLatestTaggedVersion()
+      val logger = sLog.value
+      val latestTag = docsTools.getTheLatestTaggedVersion(logger.info(_))
       Seq(
         libs.effectieCore.value,
         libs.effectieSyntax.value,
@@ -606,7 +62,33 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
       scalaVersion.value,
       libraryDependencies.value,
     ),
-    mdocVariables := createMdocVariables(Right(docusaurDir.value)),
+    mdocVariables := {
+      val logger = sLog.value
+      val latestVersion = docsTools.getTheLatestTaggedVersion(logger.error(_))
+      docsTools.createMdocVariables(latestVersion)
+    },
+    mdoc := {
+      implicit val logger: Logger = sLog.value
+
+      val latestVersion = docsTools.getTheLatestTaggedVersion(logger.error(_))
+
+      val envVarCi = sys.env.get("CI")
+      val ciResult = s"""sys.env.get("CI")=${envVarCi}"""
+      envVarCi match {
+        case Some("true") =>
+          logger.info(
+            s">> ${ciResult.yellow} so ${"run".green} `${"writeLatestVersion".blue}` and `${"writeVersionsArchived".blue}`."
+          )
+          val websiteDir = docusaurDir.value
+          docsTools.writeLatestVersion(websiteDir, latestVersion)
+          docsTools.writeVersionsArchived(websiteDir, latestVersion)
+        case Some(_) | None =>
+          logger.info(
+            s">> ${ciResult.yellow} so it will ${"not run".red} `${"writeLatestVersion".cyan}` and `${"writeVersionsArchived".cyan}`."
+          )
+      }
+      mdoc.evaluated
+    },
     docusaurDir := (ThisBuild / baseDirectory).value / "website",
     docusaurBuildDir := docusaurDir.value / "build",
   )
@@ -636,9 +118,207 @@ lazy val docsV1 = (project in file("docs-gen-tmp/docs-v1"))
       scalaVersion.value,
       libraryDependencies.value,
     ),
-    mdocVariables := createMdocVariables(Left(props.LoggerF1Version)),
+    mdocVariables := docsTools.createMdocVariables(props.LoggerF1Version),
   )
   .settings(noPublish)
+
+
+lazy val docsTools = new {
+
+  lazy val CmdRun = new {
+    import sys.process._
+
+    def runAndCapture(command: Seq[String]): (Int, String, String) = {
+      val out      = new StringBuilder
+      val err      = new StringBuilder
+      val exitCode =
+        Process(command).!(
+          ProcessLogger(
+            (o: String) => out.append(o).append('\n'),
+            (e: String) => err.append(e).append('\n'),
+          )
+        )
+      (exitCode, out.result().trim, err.result().trim)
+    }
+
+    def fail(prefix: String, step: String, command: Seq[String], out: String, err: String)(
+      log: String => Unit
+    ): Nothing = {
+      val cmdString = command.mkString(" ")
+      val details   =
+        if (err.nonEmpty) err
+        else if (out.nonEmpty) out
+        else "(no output)"
+      log(s">> [$prefix][$step] Command failed: `$cmdString`\n$details".red)
+      throw new MessageOnlyException(s"$step failed: $cmdString\n$details")
+    }
+  }
+
+  def getTheLatestTaggedVersion(logger: => String => Unit): String = {
+    val (ghVersionExit, ghVersionOut, ghVersionErr) = CmdRun.runAndCapture(Seq("gh", "--version"))
+    if (ghVersionExit != 0)
+      CmdRun.fail(
+        "getTheLatestTaggedVersion",
+        "gh --version",
+        Seq("gh", "--version"),
+        ghVersionOut,
+        ghVersionErr,
+      )(logger)
+
+    val (ghAuthExit, ghAuthOut, ghAuthErr) =
+      CmdRun.runAndCapture(Seq("gh", "auth", "status", "-h", "github.com"))
+    if (ghAuthExit != 0)
+      CmdRun.fail(
+        "getTheLatestTaggedVersion",
+        "gh auth status",
+        Seq("gh", "auth", "status", "-h", "github.com"),
+        ghAuthOut,
+        ghAuthErr,
+      )(logger)
+
+    val repo = s"${props.GitHubUsername}/${props.CodeRepoName}"
+
+    val tagNameCmd =
+      Seq("gh", "release", "view", "-R", repo, "--json", "tagName", "-q", ".tagName")
+
+    val (tagExit, tagOut, tagErr) = CmdRun.runAndCapture(tagNameCmd)
+    if (tagExit != 0)
+      CmdRun.fail("getTheLatestTaggedVersion", "gh release view", tagNameCmd, tagOut, tagErr)(logger)
+
+    val tagName = tagOut.trim
+    if (tagName.isEmpty)
+      CmdRun.fail(
+        "getTheLatestTaggedVersion",
+        "gh release view (empty tagName)",
+        tagNameCmd,
+        tagOut,
+        tagErr,
+      )(logger)
+
+    if (!tagName.startsWith("v")) {
+      logger(s">> [getTheLatestTaggedVersion] Expected tagName to start with 'v' but got: $tagName".red)
+      throw new MessageOnlyException(s"Expected tagName to start with 'v' but got: $tagName")
+    }
+
+    val versionWithoutV = tagName.stripPrefix("v")
+    SemVer.parse(versionWithoutV) match {
+      case Right(v) => v.render
+      case Left(parseError) =>
+        logger(s">> [getTheLatestTaggedVersion] Invalid SemVer from tagName ($tagName): ${parseError.toString}".red)
+        throw new MessageOnlyException(s"Invalid SemVer from tagName ($tagName): ${parseError.toString}")
+    }
+  }
+
+  def writeLatestVersion(websiteDir: File, latestVersion: String)(implicit logger: Logger): Unit = {
+    val latestVersionFile = websiteDir / "latestVersion.json"
+    val latestVersionJson = raw"""{"version":"$latestVersion"}"""
+
+    val websiteDirRelativePath =
+      s"${latestVersionFile.getParentFile.getParentFile.getName.cyan}/${latestVersionFile.getParentFile.getName.yellow}"
+    logger.info(
+      s""">> Writing ${"the latest version".blue} to $websiteDirRelativePath/${latestVersionFile.getName.green}.
+         |>> Content: ${latestVersionJson.blue}
+         |""".stripMargin
+    )
+    IO.write(latestVersionFile, latestVersionJson)
+  }
+
+  def writeVersionsArchived(websiteDir: File, latestVersion: String)(implicit logger: Logger): Unit = {
+    import sys.process._
+
+    val (ghVersionExit, ghVersionOut, ghVersionErr) = CmdRun.runAndCapture(Seq("gh", "--version"))
+    if (ghVersionExit != 0)
+      CmdRun.fail("writeVersionsArchived", "gh --version", Seq("gh", "--version"), ghVersionOut, ghVersionErr)(
+        logger.error(_)
+      )
+
+    val (ghAuthExit, ghAuthOut, ghAuthErr) =
+      CmdRun.runAndCapture(Seq("gh", "auth", "status", "-h", "github.com"))
+    if (ghAuthExit != 0)
+      CmdRun.fail(
+        "writeVersionsArchived",
+        "gh auth status",
+        Seq("gh", "auth", "status", "-h", "github.com"),
+        ghAuthOut,
+        ghAuthErr,
+      )(logger.error(_))
+
+    val repo = s"${props.GitHubUsername}/${props.CodeRepoName}"
+
+    val ghTagsCmd =
+      Seq(
+        "gh",
+        "api",
+        "-H",
+        "Accept: application/vnd.github+json",
+        s"/repos/$repo/tags",
+        "--paginate",
+        "-q",
+        ".[].name",
+      )
+
+    val (tagsExit, tagsOut, tagsErr) = CmdRun.runAndCapture(ghTagsCmd)
+    if (tagsExit != 0)
+      CmdRun.fail("writeVersionsArchived", "gh api tags", ghTagsCmd, tagsOut, tagsErr)(logger.error(_))
+
+    val tags = tagsOut.trim
+    if (tags.isEmpty)
+      CmdRun.fail("writeVersionsArchived", "gh api tags (empty)", ghTagsCmd, tagsOut, tagsErr)(logger.error(_))
+
+    val versions = tags
+      .split("\n")
+      .map(_.trim)
+      .filter(t => t.nonEmpty && t.startsWith("v"))
+      .map(_.stripPrefix("v"))
+      .map(SemVer.parse)
+      .collect { case Right(v) => v }
+      .sorted(Ordering[SemVer].reverse)
+      .map(_.render)
+      .filter(_ != latestVersion)
+
+    val versionsArchivedFile = websiteDir / "src" / "pages" / "versionsArchived.json"
+
+    val versionsInJson = versions
+      .map { v =>
+        raw"""  {
+             |    "name": "$v",
+             |    "label": "$v"
+             |  }""".stripMargin
+      }
+      .mkString("[\n", ",\n", "\n]")
+
+    IO.write(versionsArchivedFile, versionsInJson)
+  }
+
+  def createMdocVariables(version: String): Map[String, String] = {
+    val versionForDoc = version
+    Map(
+      "VERSION"                               -> versionForDoc,
+      "SUPPORTED_SCALA_VERSIONS"              -> {
+        val versions = props
+          .CrossScalaVersions
+          .map(CrossVersion.binaryScalaVersion)
+          .map(binVer => s"`$binVer`")
+        if (versions.length > 1)
+          s"${versions.init.mkString(", ")} and ${versions.last}"
+        else
+          versions.mkString
+      },
+      "SUPPORTED_SCALA_VERSIONS_FOR_SCALA_JS" -> {
+        val versions = props
+          .CrossScalaVersionsForScalaJsAndNative
+          .map(CrossVersion.binaryScalaVersion)
+          .map(binVer => s"`$binVer`")
+        if (versions.length > 1)
+          s"${versions.init.mkString(", ")} and ${versions.last}"
+        else
+          versions.mkString
+      },
+    )
+  }
+
+}
+
 
 addCommandAlias(
   "docsCleanAll",
@@ -649,47 +329,19 @@ addCommandAlias(
   "; docs/mdoc; docsV1/mdoc",
 )
 
-def getTheLatestTaggedVersion(): String                                                  = {
-  import sys.process.*
-  "git fetch --tags".!
-  val tag = "git rev-list --tags --max-count=1".!!.trim
-  s"git describe --tags $tag".!!.trim.stripPrefix("v")
-}
-def createMdocVariables(versionOrDocusaurDir: Either[String, File]): Map[String, String] =
-  Map(
-    "VERSION"                  -> (versionOrDocusaurDir match {
-      case Left(version) => version
-      case Right(docusaurDir) => {
-        val latestVersion = getTheLatestTaggedVersion()
-        val websiteDir    = docusaurDir
-
-        val latestVersionFile = websiteDir / "latestVersion.json"
-        val latestVersionJson = s"""{"version":"$latestVersion"}"""
-        IO.write(latestVersionFile, latestVersionJson)
-
-        latestVersion
-      }
-    }),
-    "SUPPORTED_SCALA_VERSIONS" -> {
-      val versions = props
-        .CrossScalaVersions
-        .map(CrossVersion.binaryScalaVersion)
-        .map(binVer => s"`$binVer`")
-      if (versions.length > 1)
-        s"${versions.init.mkString(", ")} and ${versions.last}"
-      else
-        versions.mkString
-    },
-  )
 
 lazy val props =
   new {
 
-    final val GitHubUsername = "Kevin-Lee"
-    final val RepoName       = "logger-f"
+    private val GitHubRepo = findRepoOrgAndName
+
+    val GitHubUsername = GitHubRepo.fold("kevin-lee")(_.orgToString)
+    val RepoName       = GitHubRepo.fold("logger-f-docs")(_.nameToString)
+
+    val CodeRepoName = RepoName.stripSuffix("-docs")
 
     final val Scala3Versions = List("3.3.5")
-    final val Scala2Versions = List("2.13.16", "2.12.18")
+    final val Scala2Versions = List("2.13.18", "2.12.18")
 
 //    final val ProjectScalaVersion = Scala3Versions.head
     final val ProjectScalaVersion = Scala2Versions.head
@@ -850,91 +502,3 @@ def libraryDependenciesRemoveScala3Incompatible(
     else
       libraries
   )
-
-def module(projectName: ProjectName, crossProject: CrossProject.Builder): CrossProject = {
-  val prefixedName = prefixedProjectName(projectName.projectName)
-  projectCommonSettings(prefixedName, crossProject)
-}
-
-def testProject(projectName: ProjectName, crossProject: CrossProject.Builder): CrossProject = {
-  val prefixedName = s"test-${prefixedProjectName(projectName.projectName)}"
-  projectCommonSettings(prefixedName, crossProject)
-    .settings(
-      // Disable publishing tasks
-      publish / skip := true,
-      publish := {},
-      publishLocal := {},
-      // Prevent artifact generation for publishing
-      publishArtifact := false,
-      packagedArtifacts := Map.empty,
-      // Disable specific packaging tasks
-      packageBin / publishArtifact := false,
-      packageDoc / publishArtifact := false,
-      packageSrc / publishArtifact := false,
-    )
-}
-
-def projectCommonSettings(projectName: String, crossProject: CrossProject.Builder): CrossProject =
-  crossProject
-    .in(file(s"modules/$projectName"))
-    .settings(
-      name := projectName,
-      licenses := props.licenses,
-      scalafixConfig := (
-        if (scalaVersion.value.startsWith("3"))
-          ((ThisBuild / baseDirectory).value / ".scalafix-scala3.conf").some
-        else
-          ((ThisBuild / baseDirectory).value / ".scalafix-scala2.conf").some
-      ),
-      /* WartRemover and scalacOptions { */
-      //      , Compile / compile / wartremoverErrors ++= commonWarts((update / scalaBinaryVersion).value)
-      //      , Test / compile / wartremoverErrors ++= commonWarts((update / scalaBinaryVersion).value)
-      wartremoverErrors ++= commonWarts((update / scalaBinaryVersion).value),
-      Compile / console / wartremoverErrors := List.empty,
-      Compile / console / wartremoverWarnings := List.empty,
-      Compile / console / scalacOptions :=
-        (console / scalacOptions)
-          .value
-          .filterNot(option => option.contains("wartremover") || option.contains("import")),
-      Test / console / wartremoverErrors := List.empty,
-      Test / console / wartremoverWarnings := List.empty,
-      Test / console / scalacOptions :=
-        (console / scalacOptions)
-          .value
-          .filterNot(option => option.contains("wartremover") || option.contains("import")),
-      /* } WartRemover and scalacOptions */
-      testFrameworks ++= Seq(TestFramework("hedgehog.sbt.Framework")),
-      /* Coveralls { */
-      coverageHighlighting := (CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 10)) | Some((2, 11)) =>
-          false
-        case _ =>
-          true
-      }),
-      /* } Coveralls */
-    )
-
-lazy val jsSettingsForFuture: SettingsDefinition = List(
-  libraryDependencies ++= List(
-    libs.tests.scalaJsMacrotaskExecutor.value,
-    libs.tests.munit.value,
-  )
-)
-//lazy val jsSettingsForFuture: SettingsDefinition = List(
-//  Test / scalacOptions ++= (if (scalaVersion.value.startsWith("3")) List.empty
-//                            else List("-P:scalajs:nowarnGlobalExecutionContext")),
-//  Test / compile / scalacOptions ++= (if (scalaVersion.value.startsWith("3")) List.empty
-//                                      else List("-P:scalajs:nowarnGlobalExecutionContext")),
-//)
-
-lazy val jsSettings: SettingsDefinition = List(
-  crossScalaVersions := props.CrossScalaVersionsForScalaJsAndNative,
-  Test / fork := false,
-  coverageEnabled := false,
-)
-
-lazy val nativeSettings: SettingsDefinition = List(
-  crossScalaVersions := props.CrossScalaVersionsForScalaJsAndNative,
-  Test / fork := false,
-  coverageEnabled := false,
-)

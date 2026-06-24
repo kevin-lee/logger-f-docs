@@ -1,6 +1,4 @@
 import just.semver.SemVer
-import kevinlee.sbt.SbtCommon.crossVersionProps
-import sbtcrossproject.CrossProject
 import extras.scala.io.syntax.color.*
 
 ThisBuild / scalaVersion := props.ProjectScalaVersion
@@ -41,13 +39,17 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
     mdocOut := file("generated-docs/docs"),
     cleanFiles += ((ThisBuild / baseDirectory).value / "generated-docs" / "docs"),
     scalacOptions ~= (_.filter(opt => opt != "-Xfatal-warnings")),
+    scalacOptions ++= Seq(
+      "-Wconf:msg=unused value:s",
+      "-Wconf:msg=never used:s",
+    ),
     libraryDependencies ++= {
       val logger = sLog.value
       val latestTag = docsTools.getTheLatestTaggedVersion(logger.info(_))
       Seq(
-        libs.effectieCore.value,
-        libs.effectieSyntax.value,
-        libs.effectieCatsEffect2.value,
+        libs.effectieCore,
+        libs.effectieSyntax,
+        libs.effectieCatsEffect2,
         "io.kevinlee" %% "logger-f-core"        % latestTag,
         "io.kevinlee" %% "logger-f-cats"        % latestTag,
         "io.kevinlee" %% "logger-f-slf4j"       % latestTag,
@@ -102,6 +104,10 @@ lazy val docsV1 = (project in file("docs-gen-tmp/docs-v1"))
     mdocOut := file("website/versioned_docs/version-v1/docs"),
     cleanFiles += ((ThisBuild / baseDirectory).value / "website" / "versioned_docs" / "version-v1"),
     scalacOptions ~= (_.filter(opt => opt != "-Xfatal-warnings")),
+    scalacOptions ++= Seq(
+      "-Wconf:msg=unused value:s",
+      "-Wconf:msg=never used:s",
+    ),
     libraryDependencies ++=
       Seq(
         "io.kevinlee" %% "logger-f-cats-effect"   % props.LoggerF1Version,
@@ -414,75 +420,73 @@ lazy val libs =
     lazy val logbackClassic: ModuleID       = "ch.qos.logback" % "logback-classic" % props.LogbackVersion
     lazy val logbackClassicLatest: ModuleID = "ch.qos.logback" % "logback-classic" % props.LogbackLatestVersion
 
-    lazy val log4sLib = Def.setting("org.log4s" %%% "log4s" % props.Log4sVersion)
+    lazy val log4sLib = "org.log4s" %% "log4s" % props.Log4sVersion
 
     lazy val log4jApi  = "org.apache.logging.log4j" % "log4j-api"  % props.Log4JVersion
     lazy val log4jCore = "org.apache.logging.log4j" % "log4j-core" % props.Log4JVersion
 
     def sbtLoggingLib(sbtLoggingVersion: String) = "org.scala-sbt" %% "util-logging" % sbtLoggingVersion
 
-    lazy val cats = Def.setting("org.typelevel" %%% "cats-core" % props.CatsVersion)
+    lazy val cats = "org.typelevel" %% "cats-core" % props.CatsVersion
 
-    def libCatsEffect(catsEffectVersion: String) = Def.setting("org.typelevel" %%% "cats-effect" % catsEffectVersion)
+    def libCatsEffect(catsEffectVersion: String) = "org.typelevel" %% "cats-effect" % catsEffectVersion
 
-    lazy val monix3Execution = Def.setting("io.monix" %%% "monix-execution" % props.Monix3Version)
+    lazy val monix3Execution = "io.monix" %% "monix-execution" % props.Monix3Version
 
-    lazy val effectieCore        = Def.setting("io.kevinlee" %%% "effectie-core" % props.EffectieVersion)
-    lazy val effectieSyntax      = Def.setting("io.kevinlee" %%% "effectie-syntax" % props.EffectieVersion)
-    lazy val effectieCats        = Def.setting("io.kevinlee" %%% "effectie-cats" % props.EffectieVersion)
-    lazy val effectieCatsEffect2 = Def.setting("io.kevinlee" %%% "effectie-cats-effect2" % props.EffectieVersion)
-    lazy val effectieCatsEffect3 = Def.setting("io.kevinlee" %%% "effectie-cats-effect3" % props.EffectieVersion)
+    lazy val effectieCore        = "io.kevinlee" %% "effectie-core" % props.EffectieVersion
+    lazy val effectieSyntax      = "io.kevinlee" %% "effectie-syntax" % props.EffectieVersion
+    lazy val effectieCats        = "io.kevinlee" %% "effectie-cats" % props.EffectieVersion
+    lazy val effectieCatsEffect2 = "io.kevinlee" %% "effectie-cats-effect2" % props.EffectieVersion
+    lazy val effectieCatsEffect3 = "io.kevinlee" %% "effectie-cats-effect3" % props.EffectieVersion
 
-    lazy val effectieMonix = Def.setting("io.kevinlee" %%% "effectie-monix3" % props.EffectieVersion)
+    lazy val effectieMonix = "io.kevinlee" %% "effectie-monix3" % props.EffectieVersion
 
     lazy val logbackScalaInterop       = "io.kevinlee" % "logback-scala-interop" % props.LogbackScalaInteropVersion
     lazy val logbackScalaInteropLatest =
       "io.kevinlee" % "logback-scala-interop" % props.LogbackScalaInteropLatestVersion
 
-    lazy val orphanCats = Def.setting("io.kevinlee" %%% "orphan-cats" % props.OrphanVersion)
+    lazy val orphanCats = "io.kevinlee" %% "orphan-cats" % props.OrphanVersion
 
     lazy val doobieFree = "org.tpolecat" %% "doobie-free" % props.Doobie1Version
 
     lazy val tests = new {
 
-      lazy val monix = Def.setting("io.monix" %%% "monix" % props.Monix3Version % Test)
+      lazy val monix = "io.monix" %% "monix" % props.Monix3Version % Test
 
       lazy val effectieCatsEffect3 =
-        Def.setting("io.kevinlee" %%% "effectie-cats-effect3" % props.EffectieVersion % Test)
+        "io.kevinlee" %% "effectie-cats-effect3" % props.EffectieVersion % Test
 
-      lazy val effectieMonix3 = Def.setting("io.kevinlee" %%% "effectie-monix3" % props.EffectieVersion % Test)
+      lazy val effectieMonix3 = "io.kevinlee" %% "effectie-monix3" % props.EffectieVersion % Test
 
-      lazy val hedgehogLibs = Def.setting(
+      lazy val hedgehogLibs =
         List(
-          "qa.hedgehog" %%% "hedgehog-core"   % props.HedgehogVersion % Test,
-          "qa.hedgehog" %%% "hedgehog-runner" % props.HedgehogVersion % Test,
-          "qa.hedgehog" %%% "hedgehog-sbt"    % props.HedgehogVersion % Test,
+          "qa.hedgehog" %% "hedgehog-core"   % props.HedgehogVersion % Test,
+          "qa.hedgehog" %% "hedgehog-runner" % props.HedgehogVersion % Test,
+          "qa.hedgehog" %% "hedgehog-sbt"    % props.HedgehogVersion % Test,
         )
-      )
 
-      lazy val hedgehogExtra = Def.setting(
+      lazy val hedgehogExtra =
         List(
-          "io.kevinlee" %%% "hedgehog-extra-core" % props.HedgehogExtraVersion
+          "io.kevinlee" %% "hedgehog-extra-core" % props.HedgehogExtraVersion
         ).map(_ % Test)
-      )
 
-      lazy val extrasCats = Def.setting("io.kevinlee" %%% "extras-cats" % props.ExtrasVersion % Test)
+      lazy val extrasCats = "io.kevinlee" %% "extras-cats" % props.ExtrasVersion % Test
 
-      lazy val extrasTestingTools = Def.setting("io.kevinlee" %%% "extras-testing-tools" % props.ExtrasVersion % Test)
+      lazy val extrasTestingTools = "io.kevinlee" %% "extras-testing-tools" % props.ExtrasVersion % Test
 
       lazy val extrasHedgehogCatsEffect3 =
-        Def.setting("io.kevinlee" %%% "extras-hedgehog-ce3" % props.ExtrasVersion % Test)
+        "io.kevinlee" %% "extras-hedgehog-ce3" % props.ExtrasVersion % Test
 
-      lazy val extrasConcurrent        = Def.setting("io.kevinlee" %%% "extras-concurrent" % props.ExtrasVersion % Test)
+      lazy val extrasConcurrent        = "io.kevinlee" %% "extras-concurrent" % props.ExtrasVersion % Test
       lazy val extrasConcurrentTesting = "io.kevinlee" %% "extras-concurrent-testing" % props.ExtrasVersion % Test
 
       lazy val scalaJsMacrotaskExecutor =
-        Def.setting("org.scala-js" %%% "scala-js-macrotask-executor" % props.ScalaJsMacrotaskExecutorVersion % Test)
+        "org.scala-js" %% "scala-js-macrotask-executor" % props.ScalaJsMacrotaskExecutorVersion % Test
 
-      lazy val munit = Def.setting("org.scalameta" %%% "munit" % props.MunitVersion % Test)
+      lazy val munit = "org.scalameta" %% "munit" % props.MunitVersion % Test
 
       lazy val munitCatsEffect3 =
-        Def.setting("org.typelevel" %%% "munit-cats-effect-3" % props.MunitCatsEffectVersion % Test)
+        "org.typelevel" %% "munit-cats-effect-3" % props.MunitCatsEffectVersion % Test
     }
 
   }

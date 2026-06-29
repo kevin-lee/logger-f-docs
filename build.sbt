@@ -45,7 +45,15 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
     ),
     libraryDependencies ++= {
       val logger = sLog.value
-      val latestTag = docsTools.getTheLatestTaggedVersion(logger.info(_))
+
+      val latestTag =
+        docsTools.getTheLatestTaggedVersion(props.ProjectOrgSlashRepo)(logger.info(_))
+
+      val latestSbtLoggingVersion =
+        docsTools.getTheLatestTaggedVersion(
+          s"${props.ProjectOrgSlashRepo}-sbt-logging")(logger.error(_)
+        )
+
       Seq(
         libs.effectieCore,
         libs.effectieSyntax,
@@ -55,7 +63,7 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
         "io.kevinlee" %% "logger-f-slf4j"       % latestTag,
         "io.kevinlee" %% "logger-f-log4j"       % latestTag,
         "io.kevinlee" %% "logger-f-log4s"       % latestTag,
-        "io.kevinlee" %% "logger-f-sbt-logging" % latestTag,
+        "io.kevinlee" %% "logger-f-sbt-logging" % latestSbtLoggingVersion,
         libs.slf4jApi,
         libs.logbackClassic,
       )
@@ -66,13 +74,22 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
     ),
     mdocVariables := {
       val logger = sLog.value
-      val latestVersion = docsTools.getTheLatestTaggedVersion(logger.error(_))
-      docsTools.createMdocVariables(latestVersion)
+
+      val latestVersion = docsTools.getTheLatestTaggedVersion(props.ProjectOrgSlashRepo)(logger.error(_))
+
+      val latestSbtLoggingVersion =
+        docsTools.getTheLatestTaggedVersion(
+          s"${props.ProjectOrgSlashRepo}-sbt-logging")(logger.error(_)
+        )
+      docsTools.createMdocVariables(
+        latestVersion,
+        "LOGGERF_SBT_LOGGING_VERSION" -> latestSbtLoggingVersion
+      )
     },
     mdoc := {
       implicit val logger: Logger = sLog.value
 
-      val latestVersion = docsTools.getTheLatestTaggedVersion(logger.error(_))
+      val latestVersion = docsTools.getTheLatestTaggedVersion(props.ProjectOrgSlashRepo)(logger.error(_))
 
       val envVarCi = sys.env.get("CI")
       val ciResult = s"""sys.env.get("CI")=${envVarCi}"""
@@ -160,7 +177,7 @@ lazy val docsTools = new {
     }
   }
 
-  def getTheLatestTaggedVersion(logger: => String => Unit): String = {
+  def getTheLatestTaggedVersion(orgSlashRepo: String)(logger: => String => Unit): String = {
     val (ghVersionExit, ghVersionOut, ghVersionErr) = CmdRun.runAndCapture(Seq("gh", "--version"))
     if (ghVersionExit != 0)
       CmdRun.fail(
@@ -182,10 +199,8 @@ lazy val docsTools = new {
         ghAuthErr,
       )(logger)
 
-    val repo = s"${props.GitHubUsername}/${props.CodeRepoName}"
-
     val tagNameCmd =
-      Seq("gh", "release", "view", "-R", repo, "--json", "tagName", "-q", ".tagName")
+      Seq("gh", "release", "view", "-R", orgSlashRepo, "--json", "tagName", "-q", ".tagName")
 
     val (tagExit, tagOut, tagErr) = CmdRun.runAndCapture(tagNameCmd)
     if (tagExit != 0)
@@ -296,7 +311,7 @@ lazy val docsTools = new {
     IO.write(versionsArchivedFile, versionsInJson)
   }
 
-  def createMdocVariables(version: String): Map[String, String] = {
+  def createMdocVariables(version: String, additionalVersions: (String, String)*): Map[String, String] = {
     val versionForDoc = version
     Map(
       "VERSION"                               -> versionForDoc,
@@ -320,7 +335,7 @@ lazy val docsTools = new {
         else
           versions.mkString
       },
-    )
+    ) ++ additionalVersions.toMap
   }
 
 }
@@ -345,6 +360,8 @@ lazy val props =
     val RepoName       = GitHubRepo.fold("logger-f-docs")(_.nameToString)
 
     val CodeRepoName = RepoName.stripSuffix("-docs")
+
+    val ProjectOrgSlashRepo = s"$GitHubUsername/$CodeRepoName"
 
     final val Scala3Versions = List("3.3.5")
     final val Scala2Versions = List("2.13.18", "2.12.18")

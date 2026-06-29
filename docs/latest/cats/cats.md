@@ -42,7 +42,7 @@ To use `logger-f` with Log4s, add the following logger
 You probably need `logger-f` for sbt plugin development.
 
 ```scala
-"io.kevinlee" %% "logger-f-sbt-logging" % "@VERSION@"
+"io.kevinlee" %% "logger-f-sbt-logging" % "@LOGGERF_SBT_LOGGING_VERSION@"
 ```
 
 

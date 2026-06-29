@@ -208,7 +208,7 @@ In `build.sbt`,
 ```scala
 "io.kevinlee" %% "logger-f-cats" % "@VERSION@"
 ,
-"io.kevinlee" %% "logger-f-sbt-logging" % "@VERSION@"
+"io.kevinlee" %% "logger-f-sbt-logging" % "@LOGGERF_SBT_LOGGING_VERSION@"
 ,
 ```
 
@@ -221,7 +221,7 @@ In `build.sbt`,
 ```scala
 libraryDependencies ++= Seq(
   "io.kevinlee" %% "logger-f-cats" % "@VERSION@",
-  "io.kevinlee" %% "logger-f-sbt-logging" % "@VERSION@",
+  "io.kevinlee" %% "logger-f-sbt-logging" % "@LOGGERF_SBT_LOGGING_VERSION@",
 )
 ```
 
@@ -231,7 +231,7 @@ libraryDependencies ++= Seq(
 
 ```scala
 //> using dep "io.kevinlee::logger-f-cats:@VERSION@"
-//> using dep "io.kevinlee::logger-f-sbt-logging:@VERSION@"
+//> using dep "io.kevinlee::logger-f-sbt-logging:@LOGGERF_SBT_LOGGING_VERSION@"
 ```
 
   </TabItem>

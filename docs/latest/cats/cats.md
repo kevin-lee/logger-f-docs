@@ -46,4 +46,14 @@ You probably need `logger-f` for sbt plugin development.
 ```
 
 
+### Test Kit
+To test your logs with `CanLog4Testing`, add the following test kit
+
+```scala
+"io.kevinlee" %% "logger-f-test-kit" % "@VERSION@" % Test
+```
+
+
 ## [Log](log.md)
+
+## [Source Location](source-location.md)

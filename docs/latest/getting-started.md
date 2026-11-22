@@ -424,9 +424,16 @@ foo[IO](1).unsafeRunSync() // You expect None here.
 With logs like
 
 ```
-00:17:33.983 [main] DEBUG MyLogger - a is 1
-00:17:33.995 [main] ERROR MyLogger - b is empty
+00:17:33.983 [main] DEBUG MyLogger - a is 1 at com.example.MyApp.foo(MyApp.scala:16)
+00:17:33.995 [main] ERROR MyLogger - b is empty at com.example.MyApp.foo(MyApp.scala:19)
 ```
+
+:::info
+Since `2.15.0`, logger-f adds the source location of the log call to the log message. It is the text after ` at `.
+The example logs on this page use the package `com.example` and the file `MyApp.scala`. The line number is the line of the log call in the example code block. Your logs show the class, the method, the file and the line of your code.
+
+You can change the format of the source location or remove it. Please read [Source Location](cats/source-location.md).
+:::
 
 ***
 
@@ -477,8 +484,8 @@ foo[IO](1).unsafeRunSync() // You expect Left("Some Error") here.
 With logs like
 
 ```
-00:40:48.663 [main] DEBUG MyLogger - a is 1
-00:40:48.667 [main] ERROR MyLogger - Error: Some Error
+00:40:48.663 [main] DEBUG MyLogger - a is 1 at com.example.MyApp.foo(MyApp.scala:16)
+00:40:48.667 [main] ERROR MyLogger - Error: Some Error at com.example.MyApp.foo(MyApp.scala:19)
 ```
 
 ## Usage
@@ -486,3 +493,4 @@ With logs like
 Please check out
 
 * [LoggerF for Cats](cats/cats.md)
+* [Source Location](cats/source-location.md)

@@ -12,6 +12,13 @@ import TabItem from '@theme/TabItem';
 
 More precisely, it requires `Fx` from [Effectie](https://kevin-lee.github.io/effectie) and `Monad` from [Cats](https://typelevel.org/cats). So it can be used for whatever effect you want as long as there's an interpreter for `Fx` of the effect.
 
+:::info
+Since `2.15.0`, logger-f adds the source location of the log call to the log message. It is the text after ` at ` in the example logs.
+The example logs on this page use the package `com.example` and the file `MyApp.scala`. A method with no enclosing object in the example has `MyApp` as its enclosing class. The line number is the line of the log call in the example code block. Your logs show the class, the method, the file and the line of your code.
+
+You can change the format of the source location or remove it. Please read [Source Location](source-location.md).
+:::
+
 ## Log `String`
 LoggerF is mainly for `F[_]` but let's start with more simple logging case that is logging `String`.
 
@@ -114,8 +121,8 @@ implicit val canLog: CanLog = Slf4JLogger.slf4JCanLog("test-logger")
 hello[IO]("Kevin").unsafeRunSync()
 ```
 ```
-22:52:36.970 [Thread-64] INFO test-logger - [1] Hello Kevin
-22:52:36.977 [Thread-64] INFO test-logger - [2] Hello Kevin
+22:52:36.970 [Thread-64] INFO test-logger - [1] Hello Kevin at com.example.MyApp.hello(MyApp.scala:11)
+22:52:36.977 [Thread-64] INFO test-logger - [2] Hello Kevin at com.example.MyApp.hello(MyApp.scala:14)
 ```
 ***
 If you don't need to re-use the `String` value,
@@ -148,8 +155,8 @@ implicit val canLog: CanLog = Slf4JLogger.slf4JCanLog("test-logger")
 hello[IO]("Kevin").unsafeRunSync()
 ```
 ```
-22:53:09.165 [Thread-66] INFO test-logger - [1] The name is Kevin
-22:53:09.166 [Thread-66] INFO test-logger - [2] The name is Kevin
+22:53:09.165 [Thread-66] INFO test-logger - [1] The name is Kevin at com.example.MyApp.hello(MyApp.scala:11)
+22:53:09.166 [Thread-66] INFO test-logger - [2] The name is Kevin at com.example.MyApp.hello(MyApp.scala:13)
 ```
   </TabItem>
   
@@ -181,7 +188,7 @@ implicit val canLog: CanLog = Slf4JLogger.slf4JCanLog("test-logger")
 hello[IO]("Kevin").unsafeRunSync()
 ```
 ```
-02:07:09.298 [Thread-67] INFO test-logger - Hello Kevin
+02:07:09.298 [Thread-67] INFO test-logger - Hello Kevin at com.example.MyApp.hello(MyApp.scala:11)
 ```
 
 ***
@@ -212,7 +219,7 @@ implicit val canLog: CanLog = Slf4JLogger.slf4JCanLog("test-logger")
 hello[IO]("Kevin").unsafeRunSync()
 ```
 ```
-02:15:41.367 [Thread-74] INFO test-logger - The name is Kevin
+02:15:41.367 [Thread-74] INFO test-logger - The name is Kevin at com.example.MyApp.hello(MyApp.scala:11)
 ```
 
 
@@ -324,9 +331,9 @@ object MyApp extends IOApp {
 
 ```
 ```
-23:34:25.021 [ioapp-compute-1] DEBUG MyApp - Hello World
+23:34:25.021 [ioapp-compute-1] DEBUG MyApp - Hello World at com.example.MyApp.hello(MyApp.scala:13)
 Hello World
-23:34:25.022 [ioapp-compute-1] DEBUG MyApp - Hello Kevin
+23:34:25.022 [ioapp-compute-1] DEBUG MyApp - Hello Kevin at com.example.MyApp.hello(MyApp.scala:13)
 Hello Kevin
 ```
 
@@ -392,8 +399,8 @@ object MyApp extends IOApp {
 
 ```
 ```
-23:04:56.272 [ioapp-compute-0] INFO MyApp - The name is Kevin Lee
-23:04:56.273 [ioapp-compute-0] DEBUG MyApp - Greeting: Hello Kevin Lee
+23:04:56.272 [ioapp-compute-0] INFO MyApp - The name is Kevin Lee at com.example.Greeting.greet(MyApp.scala:39)
+23:04:56.273 [ioapp-compute-0] DEBUG MyApp - Greeting: Hello Kevin Lee at com.example.Greeting.greet(MyApp.scala:40)
 Hello Kevin Lee
 ```
 
@@ -452,9 +459,9 @@ def run(): IO[Unit] = for {
 run().unsafeRunSync()
 ```
 ```
-20:09:43.117 [Thread-31] WARN MyApp- F[Option[A]] - No name given
-20:09:43.133 [Thread-31] INFO MyApp- F[Option[A]] - Name: Kevin
-20:09:43.133 [Thread-31] INFO MyApp- F[Option[A]] - Message: Hello Kevin
+20:09:43.117 [Thread-31] WARN MyApp- F[Option[A]] - No name given at com.example.MyApp.hello(MyApp.scala:18)
+20:09:43.133 [Thread-31] INFO MyApp- F[Option[A]] - Name: Kevin at com.example.MyApp.hello(MyApp.scala:19)
+20:09:43.133 [Thread-31] INFO MyApp- F[Option[A]] - Message: Hello Kevin at com.example.MyApp.hello(MyApp.scala:21)
 ```
 
 ## Log `F[Either[A, B]]`
@@ -520,10 +527,10 @@ def run(): IO[Unit] = for {
 run().unsafeRunSync()
 ```
 ```
-20:20:05.588 [Thread-47] INFO MyApp - F[Either[A, B]] - n: 10
-20:20:05.593 [Thread-47] INFO MyApp - F[Either[A, B]] - Result: 100
-20:20:05.595 [Thread-47] INFO MyApp - F[Either[A, B]] - n: 0
-20:20:05.605 [Thread-47] ERROR MyApp - F[Either[A, B]] - Error: / by zero
+20:20:05.588 [Thread-47] INFO MyApp - F[Either[A, B]] - n: 10 at com.example.MyApp.calculate(MyApp.scala:24)
+20:20:05.593 [Thread-47] INFO MyApp - F[Either[A, B]] - Result: 100 at com.example.MyApp.calculate(MyApp.scala:28)
+20:20:05.595 [Thread-47] INFO MyApp - F[Either[A, B]] - n: 0 at com.example.MyApp.calculate(MyApp.scala:24)
+20:20:05.605 [Thread-47] ERROR MyApp - F[Either[A, B]] - Error: / by zero at com.example.MyApp.calculate(MyApp.scala:27)
 ```
 
 
@@ -585,9 +592,9 @@ def run(): IO[Unit] = for {
 run().unsafeRunSync()
 ```
 ```
-21:49:30.118 [Thread-58] WARN MyApp- OptionT[F, A] - No name given
-21:49:30.119 [Thread-58] INFO MyApp- OptionT[F, A] - Name: Kevin
-21:49:30.121 [Thread-58] INFO MyApp- OptionT[F, A] - Message: Hello Kevin
+21:49:30.118 [Thread-58] WARN MyApp- OptionT[F, A] - No name given at com.example.MyApp.hello(MyApp.scala:20)
+21:49:30.119 [Thread-58] INFO MyApp- OptionT[F, A] - Name: Kevin at com.example.MyApp.hello(MyApp.scala:21)
+21:49:30.121 [Thread-58] INFO MyApp- OptionT[F, A] - Message: Hello Kevin at com.example.MyApp.hello(MyApp.scala:24)
 ```
 
 ## Log `EitherT[F, A, B]`
@@ -660,9 +667,9 @@ def run(): IO[Unit] = for {
 run().unsafeRunSync()
 ```
 ```
-22:14:24.272 [Thread-66] INFO MyApp - EitherT[F, A, B] - n: 10
-22:14:24.275 [Thread-66] INFO MyApp - EitherT[F, A, B] - Result: 100
-22:14:24.275 [Thread-66] INFO MyApp - EitherT[F, A, B] - n: 0
-22:14:24.279 [Thread-66] ERROR MyApp - EitherT[F, A, B] - Error: / by zero
+22:14:24.272 [Thread-66] INFO MyApp - EitherT[F, A, B] - n: 10 at com.example.MyApp.calculate(MyApp.scala:27)
+22:14:24.275 [Thread-66] INFO MyApp - EitherT[F, A, B] - Result: 100 at com.example.MyApp.calculate(MyApp.scala:32)
+22:14:24.275 [Thread-66] INFO MyApp - EitherT[F, A, B] - n: 0 at com.example.MyApp.calculate(MyApp.scala:27)
+22:14:24.279 [Thread-66] ERROR MyApp - EitherT[F, A, B] - Error: / by zero at com.example.MyApp.calculate(MyApp.scala:31)
 ```
 

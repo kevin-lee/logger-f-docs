@@ -77,6 +77,7 @@ import effectie.instnace.ce3.fx._
   {label: 'Slf4J', value: 'slf4j'},
   {label: 'Log4s', value: 'log4s'},
   {label: 'Log4j', value: 'log4j'},
+  {label: 'sbt Logging', value: 'sbt-logging'},
   ]}>
   <TabItem value="slf4j">
 
@@ -95,6 +96,23 @@ implicit val canLog: CanLog = Slf4JLogger.slf4JCanLog("my-logger-name")
 implicit val canLog: CanLog = Slf4JLogger.slf4JCanLogWith(org.slf4j.LoggerFactory.getLogger(getClass))
 ```
 
+To set the format of the source location (since `2.15.0`),
+```scala
+import loggerf.logger._
+
+val sourceLocationFormat: SourceLocationFormat = SourceLocationFormat.beforeMessage("[", "] ")
+
+implicit val canLog: CanLog = Slf4JLogger.slf4JCanLogWithSourceLocationFormat[MyAppType](sourceLocationFormat)
+// or
+implicit val canLog: CanLog = Slf4JLogger.slf4JCanLogWithSourceLocationFormat("my-logger-name", sourceLocationFormat)
+
+// or
+implicit val canLog: CanLog = Slf4JLogger.slf4JCanLogWithLoggerAndSourceLocationFormat(
+  org.slf4j.LoggerFactory.getLogger(getClass),
+  sourceLocationFormat,
+)
+```
+
   </TabItem>
 
   <TabItem value="log4s">
@@ -111,6 +129,23 @@ implicit val canLog: CanLog = Log4sLogger.log4sCanLog("my-logger-name")
 
 // or
 implicit val canLog: CanLog = Log4sLogger.log4sCanLogWith(org.log4s.getLogger)
+```
+
+To set the format of the source location (since `2.15.0`),
+```scala
+import loggerf.logger._
+
+val sourceLocationFormat: SourceLocationFormat = SourceLocationFormat.beforeMessage("[", "] ")
+
+implicit val canLog: CanLog = Log4sLogger.log4sCanLogWithSourceLocationFormat[MyAppType](sourceLocationFormat)
+// or
+implicit val canLog: CanLog = Log4sLogger.log4sCanLogWithSourceLocationFormat("my-logger-name", sourceLocationFormat)
+
+// or
+implicit val canLog: CanLog = Log4sLogger.log4sCanLogWithLoggerAndSourceLocationFormat(
+  org.log4s.getLogger,
+  sourceLocationFormat,
+)
 ```
   </TabItem>
 
@@ -131,8 +166,45 @@ implicit val canLog: CanLog = Log4jLogger.log4jCanLog("my-logger-name")
 implicit val canLog: CanLog = Log4jLogger.log4jCanLogWith(org.apache.logging.log4j.LogManager.getLogger(getClass)) 
 ```
 
+To set the format of the source location (since `2.15.0`),
+```scala
+import loggerf.logger._
+
+val sourceLocationFormat: SourceLocationFormat = SourceLocationFormat.afterMessage(" (", ")")
+
+implicit val canLog: CanLog = Log4jLogger.log4jCanLogWithSourceLocationFormat[MyAppType](sourceLocationFormat)
+// or
+implicit val canLog: CanLog = Log4jLogger.log4jCanLogWithSourceLocationFormat("my-logger-name", sourceLocationFormat)
+
+// or
+implicit val canLog: CanLog = Log4jLogger.log4jCanLogWithLoggerAndSourceLocationFormat(
+  org.apache.logging.log4j.LogManager.getLogger(getClass),
+  sourceLocationFormat,
+)
+```
+
+  </TabItem>
+
+  <TabItem value="sbt-logging">
+
+If you develop an sbt plugin, get `logger-f-sbt-logging` then,
+```scala
+import loggerf.logger._
+
+implicit val logger: sbt.util.Logger = streams.value.log
+implicit val canLog: CanLog = SbtLogger.sbtLoggerCanLog
+```
+
+`logger-f-sbt-logging` `@LOGGERF_SBT_LOGGING_VERSION@` has no factory method which takes a `SourceLocationFormat`. To use a different format, please read [Source Location](source-location.md#set-the-format-with-each-backend).
+
   </TabItem>
 </Tabs>
+
+:::info
+Since `2.15.0`, all these `CanLog`s add the source location of the log call to the log message, e.g. `Hello at com.example.Foo.bar(Foo.scala:42)`.
+To remove it, use `withoutSourceLocation`, e.g. `Slf4JLogger.slf4JCanLog[MyAppType].withoutSourceLocation`.
+For more details, please read [Source Location](source-location.md).
+:::
 
 ## Example
 

@@ -54,6 +54,12 @@ object ProjectInfo {
 
     final val LoggerF1Version = "1.20.0"
 
+    /* The GitHub release v2.15.0 of logger-f-sbt-logging exists, but its artifacts are not on Maven Central.
+     * So the docs use this version instead of the latest GitHub release of logger-f-sbt-logging.
+     * Remove it and use `docsTools.getTheLatestTaggedVersion` again when a newer version is on Maven Central.
+     */
+    final val LoggerFSbtLoggingVersion = "2.14.0"
+
     final val ExtrasVersion = "0.49.0"
 
     val Slf4JVersion       = "2.0.12"

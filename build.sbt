@@ -50,10 +50,7 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
       val latestTag =
         docsTools.getTheLatestTaggedVersion(props.ProjectOrgSlashRepo)(logger.info(_))
 
-      val latestSbtLoggingVersion =
-        docsTools.getTheLatestTaggedVersion(
-          s"${props.ProjectOrgSlashRepo}-sbt-logging")(logger.error(_)
-        )
+      val latestSbtLoggingVersion = props.LoggerFSbtLoggingVersion
 
       Seq(
         libs.effectieCore,
@@ -78,10 +75,8 @@ lazy val docs = (project in file("docs-gen-tmp/docs"))
 
       val latestVersion = docsTools.getTheLatestTaggedVersion(props.ProjectOrgSlashRepo)(logger.error(_))
 
-      val latestSbtLoggingVersion =
-        docsTools.getTheLatestTaggedVersion(
-          s"${props.ProjectOrgSlashRepo}-sbt-logging")(logger.error(_)
-        )
+      val latestSbtLoggingVersion = props.LoggerFSbtLoggingVersion
+
       docsTools.createMdocVariables(
         latestVersion,
         "LOGGERF_SBT_LOGGING_VERSION" -> latestSbtLoggingVersion
